@@ -1,3 +1,4 @@
+use crate::errors::EscrowError;
 use anchor_lang::prelude::*;
 
 #[account]
@@ -9,8 +10,8 @@ pub struct Vault {
 
 impl Vault {
     pub const SEED: &'static str = "VAULT";
-    // max len for operator is 5
-    pub const SPACE: usize = 8 + 32 + 16 * 8 + 4 + 5 * 32;
+    pub const MAX_OPERATORS_LEN: usize = 5;
+    pub const SPACE: usize = 8 + 32 + 16 * 8 + 4 + Vault::MAX_OPERATORS_LEN * 32;
 
     pub fn initialize(&mut self, admin: Pubkey, operators: Vec<Pubkey>) -> Result<()> {
         self.admin = admin;
@@ -22,13 +23,23 @@ impl Vault {
     }
 
     pub fn add_operator(&mut self, operator: Pubkey) -> Result<()> {
-        // TODO: check if operator is already in the list, and if the list is full
+        require!(
+            !self.operators.contains(&operator),
+            EscrowError::OperatorAlreadyExists
+        );
+        require!(
+            self.operators.len() < Vault::MAX_OPERATORS_LEN,
+            EscrowError::ExceedOperatorLimit
+        );
         self.operators.push(operator);
         Ok(())
     }
 
     pub fn remove_operator(&mut self, operator: Pubkey) -> Result<()> {
-        // TODO: check if operator is in the list
+        require!(
+            self.operators.contains(&operator),
+            EscrowError::OperatorNotExists
+        );
         self.operators.retain(|op| op != &operator);
         Ok(())
     }

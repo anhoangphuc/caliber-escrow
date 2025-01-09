@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+mod errors;
 mod instructions;
 mod states;
 
@@ -16,5 +17,16 @@ pub mod caliber_escrow {
         operators: Vec<Pubkey>,
     ) -> Result<()> {
         initialize_vault::handler(ctx, operators)
+    }
+
+    pub fn admin_add_operator(ctx: Context<AddOrRemoveOperator>, operator: Pubkey) -> Result<()> {
+        add_or_remove_operator::add_operator(ctx, operator)
+    }
+
+    pub fn admin_remove_operator(
+        ctx: Context<AddOrRemoveOperator>,
+        operator: Pubkey,
+    ) -> Result<()> {
+        add_or_remove_operator::remove_operator(ctx, operator)
     }
 }
