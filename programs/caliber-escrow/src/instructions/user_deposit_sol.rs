@@ -1,7 +1,7 @@
+use crate::errors::*;
 use crate::states::*;
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
-use crate::errors::*;
 
 #[derive(Accounts)]
 #[instruction(salt: u64)]
@@ -27,11 +27,14 @@ pub struct UserDepositSol<'info> {
 
 pub fn handler(
     ctx: Context<UserDepositSol>,
+    salt: u64,
     amount: u64,
     allowed_list: Vec<Pubkey>,
-    salt: u64,
 ) -> Result<()> {
-    require!(allowed_list.len() <= UserDeposit::MAX_ALLOWED_LIST_SIZE, EscrowError::ExceedAllowedListLimit);
+    require!(
+        allowed_list.len() <= UserDeposit::MAX_ALLOWED_LIST_SIZE,
+        EscrowError::ExceedAllowedListLimit
+    );
     let user = &ctx.accounts.user;
     let vault = &ctx.accounts.vault;
     let user_deposit = &mut ctx.accounts.user_deposit;
@@ -43,12 +46,6 @@ pub fn handler(
         },
     );
     transfer(transfer_ctx, amount)?;
-    user_deposit.initialize(
-        ctx.accounts.user.key(),
-        amount,
-        salt,
-        Asset::SOL,
-        allowed_list,
-    )?;
+    user_deposit.initialize(user.key(), amount, salt, Asset::SOL, allowed_list)?;
     Ok(())
 }

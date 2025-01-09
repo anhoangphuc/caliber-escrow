@@ -32,10 +32,10 @@ pub mod caliber_escrow {
 
     pub fn user_deposit_sol(
         ctx: Context<UserDepositSol>,
+        salt: u64,
         amount: u64,
         allowed_list: Vec<Pubkey>,
-        salt: u64,
     ) -> Result<()> {
-        user_deposit_sol::handler(ctx, amount, allowed_list, salt)
+        user_deposit_sol::handler(ctx, salt, amount, allowed_list)
     }
 }

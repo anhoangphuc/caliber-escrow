@@ -10,6 +10,8 @@ pub enum Asset {
 pub struct UserDeposit {
     pub user: Pubkey,
     pub amount: u64,
+    pub transferred_amount: u64,
+    pub withdraw_amount: u64,
     pub deposited_at: u64,
     // salt is used to separate user's deposits
     pub salt: u64,
@@ -22,7 +24,7 @@ impl UserDeposit {
     pub const SEED: &'static str = "USER_DEPOSIT";
     pub const MAX_ALLOWED_LIST_SIZE: usize = 5;
     pub const SPACE: usize =
-        8 + 32 + 8 * 2 + 1 + 32 + 16 * 8 + 4 + UserDeposit::MAX_ALLOWED_LIST_SIZE * 32;
+        8 + 32 + 8 * 4 + 1 + 32 + 16 * 8 + 4 + UserDeposit::MAX_ALLOWED_LIST_SIZE * 32;
 
     pub fn initialize(
         &mut self,
