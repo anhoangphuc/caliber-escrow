@@ -10,4 +10,6 @@ pub enum EscrowError {
     ExceedOperatorLimit,
     #[msg("Invalid admin")]
     InvalidAdmin,
+    #[msg("Exceed allowed list limit")]
+    ExceedAllowedListLimit,
 }

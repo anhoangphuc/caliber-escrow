@@ -29,4 +29,13 @@ pub mod caliber_escrow {
     ) -> Result<()> {
         add_or_remove_operator::remove_operator(ctx, operator)
     }
+
+    pub fn user_deposit_sol(
+        ctx: Context<UserDepositSol>,
+        amount: u64,
+        allowed_list: Vec<Pubkey>,
+        salt: u64,
+    ) -> Result<()> {
+        user_deposit_sol::handler(ctx, amount, allowed_list, salt)
+    }
 }
