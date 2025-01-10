@@ -90,6 +90,28 @@ describe("caliber-escrow", () => {
     assert.equal(userDepositAccount.withdrawAmount.toNumber(), 0, "Withdraw amount is not set correctly");
   })
 
+  it(`Operator withdraw remain sol failed due to in transfer time`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+
+    const userDepositAccount = (await program.account.userDeposit.all())[0];
+    try {
+      const tx = await program.methods.userWithdrawSol().accounts({
+        user: user.publicKey,
+        vault,
+        userDeposit: userDepositAccount.publicKey,
+      })
+        .signers([user])
+        .rpc({ commitment: 'confirmed' });
+      console.log('Withdraw success at tx', tx);
+      assert.fail("Withdraw should fail");
+    } catch (e) {
+      assert.equal(e.error.errorCode.code, 'InTransferTime', "Withdraw should fail of in transfer time");
+    }
+  })
+
   it(`Operator transfer sol success`, async () => {
     const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from(CONSTANTS.VAULT_SEED)],
@@ -247,11 +269,36 @@ describe("caliber-escrow", () => {
       })
         .signers([operators[0]])
         .rpc({ commitment: 'confirmed' });
-      console.log('Transfer success at tx', tx);
       assert.fail("Transfer should fail");
     } catch (e) {
       assert.equal(e.error.errorCode.code, 'ExpiredTransferTime', "Transfer should fail of expire transfer time");
     }
+  })
+
+  it(`Operator withdraw remain sol`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+
+    const userDepositAccount = (await program.account.userDeposit.all())[0];
+    const remainingAmount = userDepositAccount.account.amount.toNumber() - userDepositAccount.account.transferredAmount.toNumber();
+    const userBalanceBefore = await provider.connection.getBalance(user.publicKey, 'confirmed');
+    const vaultBalanceBefore = await provider.connection.getBalance(vault, 'confirmed');
+    const tx = await program.methods.userWithdrawSol().accounts({
+      user: user.publicKey,
+      vault,
+      userDeposit: userDepositAccount.publicKey,
+    })
+      .signers([user])
+      .rpc({ commitment: 'confirmed' });
+    console.log('Withdraw success at tx', tx);
+    const userDepositAccountAfter = await program.account.userDeposit.fetch(userDepositAccount.publicKey);
+    const userBalanceAfter = await provider.connection.getBalance(user.publicKey, 'confirmed');
+    const vaultBalanceAfter = await provider.connection.getBalance(vault, 'confirmed');
+    assert.equal(userBalanceAfter - userBalanceBefore, remainingAmount, "User balance is not updated correctly");
+    assert.equal(vaultBalanceAfter - vaultBalanceBefore, -remainingAmount, "Vault balance is not updated correctly");
+    assert.equal(userDepositAccountAfter.withdrawAmount.toNumber(), remainingAmount, "Withdraw amount is not set correctly");
   })
 });
 

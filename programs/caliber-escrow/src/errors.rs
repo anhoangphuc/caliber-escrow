@@ -22,4 +22,6 @@ pub enum EscrowError {
     ExceedTransferAmount,
     #[msg("Invalid asset")]
     InvalidAsset,
+    #[msg("In transfer time")]
+    InTransferTime,
 }

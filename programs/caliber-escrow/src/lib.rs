@@ -43,4 +43,8 @@ pub mod caliber_escrow {
     pub fn operator_transfer_sol(ctx: Context<OperatorTransferSol>, amount: u64) -> Result<()> {
         operator_transfer_sol::handler(ctx, amount)
     }
+
+    pub fn user_withdraw_sol(ctx: Context<UserWithdrawSol>) -> Result<()> {
+        user_withdraw_sol::handler(ctx)
+    }
 }
