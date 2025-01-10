@@ -300,5 +300,26 @@ describe("caliber-escrow", () => {
     assert.equal(vaultBalanceAfter - vaultBalanceBefore, -remainingAmount, "Vault balance is not updated correctly");
     assert.equal(userDepositAccountAfter.withdrawAmount.toNumber(), remainingAmount, "Withdraw amount is not set correctly");
   })
+
+  it(`Operator withdraw remain sol failed due to no withdraw amount`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+
+    const userDepositAccount = (await program.account.userDeposit.all())[0];
+    try {
+      const tx = await program.methods.userWithdrawSol().accounts({
+        user: user.publicKey,
+        vault,
+        userDeposit: userDepositAccount.publicKey,
+      })
+        .signers([user])
+        .rpc({ commitment: 'confirmed' });
+      assert.fail('Withdraw should fail');
+    } catch (e) {
+      assert.equal(e.error.errorCode.code, 'NoWithdrawAmount', "Withdraw should fail of no withdraw amount");
+    }
+  })
 });
 

@@ -26,4 +26,6 @@ pub enum EscrowError {
     InTransferTime,
     #[msg("Invalid user")]
     InvalidUser,
+    #[msg("No withdraw amount")]
+    NoWithdrawAmount,
 }

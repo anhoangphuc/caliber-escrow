@@ -46,7 +46,9 @@ pub fn handler(ctx: Context<UserWithdrawSplToken>) -> Result<()> {
         EscrowError::InTransferTime
     );
 
-    let amount = user_deposit.amount - user_deposit.transferred_amount;
+    let amount =
+        user_deposit.amount - user_deposit.transferred_amount - user_deposit.withdraw_amount;
+    require!(amount > 0, EscrowError::NoWithdrawAmount);
     user_deposit.withdraw_amount = amount;
 
     let vault_seeds: &[&[&[u8]]] = &[&[Vault::SEED.as_bytes(), &[ctx.bumps.vault]]];

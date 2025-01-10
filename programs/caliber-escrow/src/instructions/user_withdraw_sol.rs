@@ -30,7 +30,9 @@ pub fn handler(ctx: Context<UserWithdrawSol>) -> Result<()> {
     let vault = &mut ctx.accounts.vault;
     let user = &mut ctx.accounts.user;
 
-    let amount = user_deposit.amount - user_deposit.transferred_amount;
+    let amount =
+        user_deposit.amount - user_deposit.transferred_amount - user_deposit.withdraw_amount;
+    require!(amount > 0, EscrowError::NoWithdrawAmount);
     user_deposit.withdraw_amount = amount;
 
     require!(
