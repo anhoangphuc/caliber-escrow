@@ -46,6 +46,6 @@ pub fn handler(
         },
     );
     transfer(transfer_ctx, amount)?;
-    user_deposit.initialize(user.key(), amount, salt, Asset::SOL, allowed_list)?;
+    user_deposit.initialize(user.key(), amount, salt, Asset::Sol, allowed_list)?;
     Ok(())
 }

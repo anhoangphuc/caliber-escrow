@@ -27,7 +27,7 @@ pub struct OperatorTransferSol<'info> {
     #[account(
         mut,
         constraint = user_deposit.allowed_list.contains(&receiver.key()) @ EscrowError::InvalidAllowedReceiver,
-        constraint = user_deposit.asset == Asset::SOL @ EscrowError::InvalidAsset,
+        constraint = user_deposit.asset == Asset::Sol @ EscrowError::InvalidAsset,
     )]
     pub receiver: AccountInfo<'info>,
 

@@ -4,8 +4,8 @@ use crate::constants::TRANSFER_TIME;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum Asset {
-    SOL,
-    SPL(Pubkey),
+    Sol,
+    Spl(Pubkey),
 }
 
 #[account]
@@ -26,7 +26,7 @@ impl UserDeposit {
     pub const SEED: &'static str = "USER_DEPOSIT";
     pub const MAX_ALLOWED_LIST_SIZE: usize = 5;
     pub const SPACE: usize =
-        8 + 32 + 8 * 4 + 1 + 32 + 16 * 8 + 4 + UserDeposit::MAX_ALLOWED_LIST_SIZE * 32;
+        8 + 32 + 8 * 5 + 1 + 32 + 16 * 8 + 4 + UserDeposit::MAX_ALLOWED_LIST_SIZE * 32;
 
     pub fn initialize(
         &mut self,
