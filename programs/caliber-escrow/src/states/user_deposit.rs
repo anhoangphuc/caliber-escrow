@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use crate::errors::EscrowError;
 
 use crate::constants::TRANSFER_TIME;
 
@@ -36,6 +37,12 @@ impl UserDeposit {
         asset: Asset,
         allowed_list: Vec<Pubkey>,
     ) -> Result<()> {
+        // Check for duplicates in allowed_list
+        for i in 0..allowed_list.len() {
+            for j in i+1..allowed_list.len() {
+                require!(allowed_list[i] != allowed_list[j], EscrowError::DuplicateAllowedReceiver);
+            }
+        }
         let current_time = Clock::get()?.unix_timestamp as u64;
         self.user = user;
         self.amount = amount;

@@ -28,4 +28,6 @@ pub enum EscrowError {
     InvalidUser,
     #[msg("No withdraw amount")]
     NoWithdrawAmount,
+    #[msg("Duplicate allowed receiver")]
+    DuplicateAllowedReceiver,
 }

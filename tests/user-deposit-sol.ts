@@ -46,6 +46,59 @@ describe("caliber-escrow", () => {
     }
   });
 
+  it(`User deposit sol failed due to duplicate allowed receiver`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+    // use current time as salt
+    const salt = new BN(Math.floor(Date.now() / 1000));
+    const [userDeposit] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.USER_DEPOSIT_SEED), user.publicKey.toBuffer(), salt.toArrayLike(Buffer, 'le', 8)],
+      program.programId
+    );
+    const amount = new BN(5 * LAMPORTS_PER_SOL);
+    try {
+    const tx = await program.methods.userDepositSol(salt, amount, [allowedList[0], allowedList[0]]).accounts({
+      user: user.publicKey,
+      vault,
+      userDeposit,
+    })
+        .signers([user])
+        .rpc({ commitment: 'confirmed' });
+      assert.fail("Deposit should fail");
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, 'DuplicateAllowedReceiver', "Deposit should fail due to duplicate allowed receiver");
+    }
+  })
+
+  it(`User deposit sol failed due to exceed allowed list limit`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+    // use current time as salt
+    const salt = new BN(Math.floor(Date.now() / 1000));
+    const [userDeposit] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.USER_DEPOSIT_SEED), user.publicKey.toBuffer(), salt.toArrayLike(Buffer, 'le', 8)],
+      program.programId
+    );
+    const newAllowedList = [...allowedList, anchor.web3.Keypair.generate().publicKey];
+    const amount = new BN(5 * LAMPORTS_PER_SOL);
+    try {
+    const tx = await program.methods.userDepositSol(salt, amount, newAllowedList).accounts({
+      user: user.publicKey,
+      vault,
+      userDeposit,
+    })
+        .signers([user])
+        .rpc({ commitment: 'confirmed' });
+      assert.fail("Deposit should fail");
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, 'ExceedAllowedListLimit', "Deposit should fail due to exceed allowed list limit");
+    }
+  })
+
   it(`User deposit sol success`, async () => {
     const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from(CONSTANTS.VAULT_SEED)],
