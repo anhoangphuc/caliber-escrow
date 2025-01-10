@@ -20,6 +20,7 @@ pub struct OperatorTransferSol<'info> {
         mut,
         seeds = [UserDeposit::SEED.as_bytes(), user_deposit.user.as_ref(), &user_deposit.salt.to_le_bytes()],
         bump,
+        constraint = user_deposit.asset == Asset::Sol @ EscrowError::InvalidAsset,
     )]
     pub user_deposit: Box<Account<'info, UserDeposit>>,
 
@@ -27,7 +28,6 @@ pub struct OperatorTransferSol<'info> {
     #[account(
         mut,
         constraint = user_deposit.allowed_list.contains(&receiver.key()) @ EscrowError::InvalidAllowedReceiver,
-        constraint = user_deposit.asset == Asset::Sol @ EscrowError::InvalidAsset,
     )]
     pub receiver: AccountInfo<'info>,
 

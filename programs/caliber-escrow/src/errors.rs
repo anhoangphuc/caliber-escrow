@@ -24,4 +24,6 @@ pub enum EscrowError {
     InvalidAsset,
     #[msg("In transfer time")]
     InTransferTime,
+    #[msg("Invalid user")]
+    InvalidUser,
 }

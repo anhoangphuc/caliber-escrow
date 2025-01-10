@@ -56,4 +56,15 @@ pub mod caliber_escrow {
     pub fn user_withdraw_sol(ctx: Context<UserWithdrawSol>) -> Result<()> {
         user_withdraw_sol::handler(ctx)
     }
+
+    pub fn operator_transfer_spl_token(
+        ctx: Context<OperatorTransferSplToken>,
+        amount: u64,
+    ) -> Result<()> {
+        operator_transfer_spl_token::handler(ctx, amount)
+    }
+
+    pub fn user_withdraw_spl_token(ctx: Context<UserWithdrawSplToken>) -> Result<()> {
+        user_withdraw_spl_token::handler(ctx)
+    }
 }

@@ -5,7 +5,10 @@ use crate::states::*;
 
 #[derive(Accounts)]
 pub struct UserWithdrawSol<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = user_deposit.user == user.key() @ EscrowError::InvalidUser,
+    )]
     pub user: Signer<'info>,
     #[account(
         mut,
