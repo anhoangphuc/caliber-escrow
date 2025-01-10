@@ -12,6 +12,7 @@ describe("caliber-escrow", () => {
   const user = anchor.web3.Keypair.generate();
   const operators = Array.from({ length: 5 }, () => anchor.web3.Keypair.generate());
   const provider = new anchor.AnchorProvider(connection, new anchor.Wallet(admin), { commitment: 'confirmed' });
+  const allowedList = Array.from({ length: 5 }, () => anchor.web3.Keypair.generate().publicKey);
   anchor.setProvider(provider);
 
   const program = anchor.workspace.CaliberEscrow as Program<CaliberEscrow>;
@@ -60,7 +61,6 @@ describe("caliber-escrow", () => {
     const vaultBalanceBefore = await provider.connection.getBalance(vault, 'confirmed');
     const amount = new BN(5 * LAMPORTS_PER_SOL);
     const blockTime = await getBlockTime(provider.connection);
-    const allowedList = Array.from({ length: 5 }, () => anchor.web3.Keypair.generate().publicKey);
     const tx = await program.methods.userDepositSol(salt, amount, allowedList).accounts({
       user: user.publicKey,
       vault,
@@ -88,6 +88,170 @@ describe("caliber-escrow", () => {
     assert.ok(userDepositAccount.depositedAt.toNumber() >= blockTime && userDepositAccount.depositedAt.toNumber() <= blockTime + 10, "Block time is not set correctly");
     assert.equal(userDepositAccount.transferredAmount.toNumber(), 0, "Transferred amount is not set correctly");
     assert.equal(userDepositAccount.withdrawAmount.toNumber(), 0, "Withdraw amount is not set correctly");
+  })
+
+  it(`Operator transfer sol success`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+    const userDeposit = (await program.account.userDeposit.all())[0].publicKey;
+    // use current time as salt
+    const receiver = allowedList[0];
+    const receiverBalanceBefore = await provider.connection.getBalance(receiver, 'confirmed');
+    const vaultBalanceBefore = await provider.connection.getBalance(vault, 'confirmed');
+    const amount = new BN(1 * LAMPORTS_PER_SOL);
+    const tx = await program.methods.operatorTransferSol(amount).accounts({
+      operator: operators[0].publicKey,
+      vault,
+      userDeposit,
+      receiver: allowedList[0],
+    })
+      .signers([operators[0]])
+      .rpc({ commitment: 'confirmed' });
+
+    console.log("Operator transfer sol success at", tx);
+    const receiverBalanceAfter = await provider.connection.getBalance(receiver, 'confirmed');
+    const vaultBalanceAfter = await provider.connection.getBalance(vault, 'confirmed');
+
+    assert.equal(receiverBalanceAfter - receiverBalanceBefore, amount.toNumber(), "User balance is not updated correctly");
+    assert.equal(vaultBalanceBefore - vaultBalanceAfter, amount.toNumber(), "Vault balance is not updated correctly");
+
+    const userDepositAccount = await program.account.userDeposit.fetch(userDeposit);
+    assert.equal(userDepositAccount.transferredAmount.toNumber(), amount.toNumber(), "Transferred amount is not set correctly");
+  })
+
+  it(`Operator transfer sol success to other user`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+    const userDepositAccountBefore = (await program.account.userDeposit.all())[0];
+    // use current time as salt
+    const receiver = allowedList[1];
+    const receiverBalanceBefore = await provider.connection.getBalance(receiver, 'confirmed');
+    const vaultBalanceBefore = await provider.connection.getBalance(vault, 'confirmed');
+    const amount = new BN(2 * LAMPORTS_PER_SOL);
+    try {
+      const tx = await program.methods.operatorTransferSol(amount).accounts({
+        operator: operators[0].publicKey,
+        vault,
+        userDeposit: userDepositAccountBefore.publicKey,
+        receiver,
+      })
+        .signers([operators[0]])
+        .rpc({ commitment: 'confirmed' });
+
+      console.log("Operator transfer sol to other user success at", tx);
+    } catch (e) {
+      console.error(e);
+    }
+    const receiverBalanceAfter = await provider.connection.getBalance(receiver, 'confirmed');
+    const vaultBalanceAfter = await provider.connection.getBalance(vault, 'confirmed');
+
+    assert.equal(receiverBalanceAfter - receiverBalanceBefore, amount.toNumber(), "User balance is not updated correctly");
+    assert.equal(vaultBalanceBefore - vaultBalanceAfter, amount.toNumber(), "Vault balance is not updated correctly");
+
+    const userDepositAccount = await program.account.userDeposit.fetch(userDepositAccountBefore.publicKey);
+    assert.equal(userDepositAccountBefore.account.transferredAmount.toNumber() + amount.toNumber(), userDepositAccount.transferredAmount.toNumber(), "Transferred amount is not set correctly");
+  })
+
+
+  it(`Operator transfer sol failed to unallowed receiver`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+    const userDeposit = (await program.account.userDeposit.all())[0].publicKey;
+    const amount = new BN(1 * LAMPORTS_PER_SOL);
+    const receiver = anchor.web3.Keypair.generate().publicKey;
+    try {
+      const tx = await program.methods.operatorTransferSol(amount).accounts({
+        operator: operators[0].publicKey,
+        vault,
+        userDeposit,
+        receiver,
+      })
+        .signers([operators[0]])
+        .rpc({ commitment: 'confirmed' });
+      assert.fail("Transfer should fail");
+    } catch (e) {
+      assert.equal(e.error.errorCode.code, 'InvalidAllowedReceiver', "Transfer should fail");
+    }
+  })
+
+  it(`Operator transfer sol failed to exceed transfer amount`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+    const userDeposit = (await program.account.userDeposit.all())[0].publicKey;
+    const amount = new BN(5 * LAMPORTS_PER_SOL);
+    const receiver = allowedList[1];
+    try {
+      const tx = await program.methods.operatorTransferSol(amount).accounts({
+        operator: operators[0].publicKey,
+        vault,
+        userDeposit,
+        receiver,
+      })
+        .signers([operators[0]])
+        .rpc({ commitment: 'confirmed' });
+      assert.fail("Transfer should fail");
+    } catch (e) {
+      assert.equal(e.error.errorCode.code, 'ExceedTransferAmount', "Transfer should fail of exceed transfer amount");
+    }
+  })
+
+  it(`Operator transfer sol failed to overflow`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+
+    const userDeposit = (await program.account.userDeposit.all())[0].publicKey;
+    const amount = new BN(2).pow(new BN(64)).sub(new BN(1));
+    const receiver = allowedList[1];
+    try {
+      const tx = await program.methods.operatorTransferSol(amount).accounts({
+        operator: operators[0].publicKey,
+        vault,
+        userDeposit,
+        receiver,
+      })
+        .signers([operators[0]])
+        .rpc({ commitment: 'confirmed' });
+      assert.fail("Transfer should fail");
+    } catch (e) {
+      assert.ok(e.transactionLogs.some(log => log.includes("add with overflow")));
+    }
+  })
+
+  it(`Operator transfer sol failed due to expired transfer time`, async () => {
+    const [vault] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from(CONSTANTS.VAULT_SEED)],
+      program.programId
+    );
+
+    const userDepositAccount = (await program.account.userDeposit.all())[0];
+    const amount = new BN(1 * LAMPORTS_PER_SOL);
+    const receiver = allowedList[1];
+    const currentTime = await getBlockTime(provider.connection);
+    await delay((userDepositAccount.account.depositedAt.toNumber() + 24 - currentTime) * 1000);
+    try {
+      const tx = await program.methods.operatorTransferSol(amount).accounts({
+        operator: operators[0].publicKey,
+        vault,
+        userDeposit: userDepositAccount.publicKey,
+        receiver,
+      })
+        .signers([operators[0]])
+        .rpc({ commitment: 'confirmed' });
+      console.log('Transfer success at tx', tx);
+      assert.fail("Transfer should fail");
+    } catch (e) {
+      assert.equal(e.error.errorCode.code, 'ExpiredTransferTime', "Transfer should fail of expire transfer time");
+    }
   })
 });
 

@@ -12,4 +12,14 @@ pub enum EscrowError {
     InvalidAdmin,
     #[msg("Exceed allowed list limit")]
     ExceedAllowedListLimit,
+    #[msg("Invalid operator")]
+    InvalidOperator,
+    #[msg("Invalid allowed receiver")]
+    InvalidAllowedReceiver,
+    #[msg("Expired transfer time")]
+    ExpiredTransferTime,
+    #[msg("Exceed transfer amount")]
+    ExceedTransferAmount,
+    #[msg("Invalid asset")]
+    InvalidAsset,
 }

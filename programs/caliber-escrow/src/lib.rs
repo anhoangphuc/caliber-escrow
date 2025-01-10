@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+mod constants;
 mod errors;
 mod instructions;
 mod states;
@@ -37,5 +38,9 @@ pub mod caliber_escrow {
         allowed_list: Vec<Pubkey>,
     ) -> Result<()> {
         user_deposit_sol::handler(ctx, salt, amount, allowed_list)
+    }
+
+    pub fn operator_transfer_sol(ctx: Context<OperatorTransferSol>, amount: u64) -> Result<()> {
+        operator_transfer_sol::handler(ctx, amount)
     }
 }

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::constants::TRANSFER_TIME;
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum Asset {
     SOL,
@@ -42,5 +44,13 @@ impl UserDeposit {
         self.asset = asset;
         self.allowed_list = allowed_list;
         Ok(())
+    }
+
+    pub fn is_in_transfer_time(&self) -> Result<bool> {
+        let current_time = Clock::get()?.unix_timestamp as u64;
+        msg!("Current time: {}", current_time);
+        msg!("Deposited at: {}", self.deposited_at);
+        msg!("Transfer time: {}", TRANSFER_TIME);
+        Ok(current_time <= self.deposited_at + TRANSFER_TIME)
     }
 }
